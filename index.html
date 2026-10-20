@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shinobi Draft — Naruto Açık Arttırma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="bg-kanji">忍</div>
+<div class="bg-glow"></div>
+
+<!-- ============ SETUP ============ -->
+<section id="screen-setup" class="screen active">
+  <div class="setup-card">
+    <div class="brand">
+      <div class="brand-mark"><span class="swirl"></span></div>
+      <h1>SHINOBI DRAFT</h1>
+      <p class="brand-sub">Naruto Shippuuden · 10 Karakter · 20 Puan · Açık Arttırma</p>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span>1. Oyuncu</span>
+        <input id="in-p1" type="text" value="Oyuncu X" maxlength="14" />
+      </label>
+      <label class="field">
+        <span>2. Oyuncu</span>
+        <input id="in-p2" type="text" value="Oyuncu Y" maxlength="14" />
+      </label>
+    </div>
+
+    <div class="mode-block">
+      <h3>Para Bitince Kural Modu</h3>
+      <label class="mode-opt selected" data-mode="1">
+        <input type="radio" name="mode" value="1" checked />
+        <div>
+          <b>Mod 1 — Zorunlu Teklif İptali</b>
+          <small>Taraflardan birinin parası bittiği anda "ilk teklifi verme zorunluluğu" iptal olur. Parası olan oyuncu sırası ondayken bile 1 puanlık teklifi vermeyebilir; teklif verilmeyen karakter karşı tarafın boş slotuna bedava gider.</small>
+        </div>
+      </label>
+      <label class="mode-opt" data-mode="2">
+        <input type="radio" name="mode" value="2" />
+        <div>
+          <b>Mod 2 — Sıfırdan Zorunlu Teklif</b>
+          <small>Parası biten oyuncunun zorunlu teklifi 0 puandan başlar. 0 ile karakteri talep eder; rakip 1+ puan verirse karakteri kapar, vermezse bedava alır.</small>
+        </div>
+      </label>
+    </div>
+
+    <button id="btn-start" class="btn btn-primary btn-big">DEVAM</button>
+    <p class="hint">Kurallar: Her oyuncu 20 puanla başlar ve tam 5 karakter alır. Karakterler <b id="pool-size">45</b> kişilik havuzdan teker teker, tekrarsız çekilir.</p>
+  </div>
+</section>
+
+<!-- ============ SEAL / MÜHÜR ============ -->
+<section id="screen-seal" class="screen">
+  <div class="setup-card seal-card">
+    <div class="brand">
+      <h1 class="seal-title">YASAK MÜHRÜ</h1>
+      <p class="brand-sub">Açık arttırmada görmek istemediğiniz ismi mühürleyin</p>
+    </div>
+
+    <p class="seal-intro">
+      Mühürlü isim veri setinden silinmez. Çekilişte karşınıza çıkarsa
+      <b>Minato Hiraishin ile gelip o ismi mühürler</b> ve turun karakteri yeniden çekilir.
+    </p>
+
+    <div class="seal-opts">
+      <button class="seal-opt" data-seal="1">
+        <span class="bo-ico">🤝</span>
+        <b>Ortak Mühür</b>
+        <small>İkiniz birlikte karar verip tek bir ismi mühürlersiniz.</small>
+      </button>
+      <button class="seal-opt" data-seal="2">
+        <span class="bo-ico">⚔️</span>
+        <b>Ayrı Ayrı Mühür</b>
+        <small>Her oyuncu gizlice 1 isim mühürler. Toplam 2 mühür.</small>
+      </button>
+      <button class="seal-opt" data-seal="0">
+        <span class="bo-ico">🎲</span>
+        <b>Mühür Yok</b>
+        <small>Havuzun tamamı oyunda. Kadere güvenin.</small>
+      </button>
+    </div>
+
+    <div id="seal-picker" hidden>
+      <div class="picker-head" id="picker-head"></div>
+      <div class="search-wrap">
+        <input id="seal-search" type="text" placeholder="Karakter ara..." autocomplete="off" />
+        <div class="results" id="seal-results"></div>
+      </div>
+      <div class="chosen" id="seal-chosen">Henüz seçim yok</div>
+      <div class="picker-actions">
+        <button class="btn" id="seal-back">← GERİ</button>
+        <button class="btn btn-primary" id="seal-confirm" disabled>MÜHÜRLE</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COIN FLIP ============ -->
+<section id="screen-flip" class="screen">
+  <div class="flip-wrap">
+    <div id="sharingan" class="sharingan">
+      <span class="tomoe t1"></span><span class="tomoe t2"></span><span class="tomoe t3"></span>
+      <span class="pupil"></span>
+    </div>
+    <h2 id="flip-text">KADER BELİRLENİYOR...</h2>
+    <p id="flip-sub">%50 — %50</p>
+  </div>
+</section>
+
+<!-- ============ GAME ============ -->
+<section id="screen-game" class="screen">
+  <header class="topbar">
+    <div class="tb-left"><span class="logo-mini">忍</span> SHINOBI DRAFT</div>
+    <div class="tb-mid">
+      <span id="round-label">TUR 1 / 10</span>
+      <div class="round-dots" id="round-dots"></div>
+    </div>
+    <div class="tb-right">
+      <span id="seal-chip" hidden></span>
+      <span id="mode-label">MOD 1</span>
+    </div>
+  </header>
+
+  <main class="board">
+    <aside class="player-col" id="pcol-0"></aside>
+
+    <section class="stage">
+      <div class="scroll-card" id="char-card">
+        <div class="scroll-top"></div>
+        <div class="scroll-body">
+          <div class="char-label">AÇIK ARTTIRMADAKİ KARAKTER</div>
+          <div class="char-name" id="char-name">—</div>
+          <div class="char-seal">封</div>
+        </div>
+        <div class="scroll-bottom"></div>
+      </div>
+
+      <div class="bid-state">
+        <div class="bs-item">
+          <span class="bs-k">GÜNCEL TEKLİF</span>
+          <span class="bs-v" id="cur-bid">—</span>
+        </div>
+        <div class="bs-item">
+          <span class="bs-k">ÖNDE OLAN</span>
+          <span class="bs-v small" id="cur-leader">—</span>
+        </div>
+      </div>
+
+      <div class="turn-banner" id="turn-banner">Sıra: —</div>
+      <div class="status-line" id="status-line"></div>
+
+      <div class="controls" id="controls">
+        <div class="bid-input-row">
+          <button class="btn btn-step" id="btn-minus">−</button>
+          <input id="bid-input" type="number" value="1" min="0" />
+          <button class="btn btn-step" id="btn-plus">+</button>
+        </div>
+        <div class="quick-row">
+          <button class="btn btn-quick" data-q="min">MİN</button>
+          <button class="btn btn-quick" data-q="p2">+2</button>
+          <button class="btn btn-quick" data-q="p5">+5</button>
+          <button class="btn btn-quick" data-q="max">HEPSİ</button>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-primary" id="btn-bid">TEKLİF VER</button>
+          <button class="btn btn-danger" id="btn-pass">PAS</button>
+        </div>
+        <div class="err" id="err-line"></div>
+      </div>
+
+      <button class="btn btn-next" id="btn-next" hidden>SONRAKİ KARAKTER →</button>
+    </section>
+
+    <aside class="player-col" id="pcol-1"></aside>
+  </main>
+
+  <section class="logbox">
+    <h4>MİSYON KAYDI</h4>
+    <div id="log"></div>
+  </section>
+</section>
+
+<!-- ============ END ============ -->
+<section id="screen-end" class="screen">
+  <div class="end-wrap">
+    <h1 class="end-title">DRAFT TAMAMLANDI</h1>
+    <div class="end-teams" id="end-teams"></div>
+    <div class="end-seals" id="end-seals"></div>
+    <button class="btn btn-primary btn-big" id="btn-restart">YENİDEN OYNA</button>
+  </div>
+</section>
+
+
+<!-- ============ MÜHÜRLEME SAHNESİ (Hiraishin) ============ -->
+<div class="seal-fx" id="seal-fx" hidden>
+  <div class="sf-veil"></div>
+  <div class="sf-stage" id="sf-stage">
+
+    <!-- mühürlenecek isim -->
+    <div class="sf-name" id="sf-name">—</div>
+
+    <!-- mühür (JS üretir) -->
+    <svg class="sf-seal" id="sf-seal" viewBox="0 0 400 400" aria-hidden="true"></svg>
+    <canvas class="sf-particles" id="sf-particles" aria-hidden="true"></canvas>
+
+    <!-- chakra zinciri -->
+    <div class="sf-beam" id="sf-beam"></div>
+
+    <!-- hiraishin kunai -->
+    <div class="sf-kunai" id="sf-kunai">
+      <svg viewBox="0 0 70 210" aria-hidden="true">
+        <g class="k-blade">
+          <path d="M35 4 L44 50 L26 50 Z"/>
+          <path d="M6 24 L27 54 L17 62 L1 32 Z"/>
+          <path d="M64 24 L69 32 L53 62 L43 54 Z"/>
+        </g>
+        <rect class="k-collar" x="25" y="50" width="20" height="14" rx="2"/>
+        <rect class="k-grip" x="29" y="64" width="12" height="84" rx="4"/>
+        <rect class="k-wrap" x="28" y="80" width="14" height="4"/>
+        <rect class="k-wrap" x="28" y="96" width="14" height="4"/>
+        <rect class="k-wrap" x="28" y="112" width="14" height="4"/>
+        <rect class="k-collar" x="24" y="148" width="22" height="12" rx="3"/>
+        <circle class="k-ring" cx="35" cy="176" r="10"/>
+        <g class="k-tag">
+          <rect x="44" y="120" width="28" height="46" rx="2"/>
+          <text x="58" y="150" transform="rotate(180 58 143)">印</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- ışınlanma parlamaları -->
+    <div class="sf-flash" id="sf-flash"></div>
+    <div class="sf-streak" id="sf-streak"></div>
+
+    <!-- Minato Namikaze — Dördüncü Hokage (resmi render) -->
+    <div class="sf-minato" id="sf-minato">
+      <img class="m-img" id="m-img" src="assets/minato.png" alt="Minato Namikaze" />
+      <img class="m-glow" id="m-glow" src="assets/minato.png" alt="" aria-hidden="true" />
+    </div>
+
+    <!-- kapanış: mühür etiketi (fuda) — referans: assets/refs/fuda-tag.jpeg -->
+    <div class="sf-stamp" id="sf-stamp">
+      <svg class="fuda" id="sf-fuda" viewBox="0 0 340 92" aria-hidden="true">
+        <defs>
+          <linearGradient id="gFuda" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#efe8d2"/>
+            <stop offset=".55" stop-color="#ddd5bc"/>
+            <stop offset="1" stop-color="#c4bca2"/>
+          </linearGradient>
+          <linearGradient id="gMetal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#8d95a6"/><stop offset="1" stop-color="#4a5262"/>
+          </linearGradient>
+        </defs>
+        <!-- sol metal halka -->
+        <circle class="fd-metal-ring" cx="26" cy="46" r="17"/>
+        <rect class="fd-metal" x="40" y="36" width="26" height="20" rx="4"/>
+        <!-- sağ metal toka -->
+        <path class="fd-metal" d="M274 30 L300 30 A16 16 0 0 1 300 62 L274 62 Z"/>
+        <rect class="fd-metal" x="262" y="34" width="18" height="24" rx="4"/>
+        <!-- kağıt -->
+        <rect class="fd-paper" x="62" y="26" width="206" height="40" rx="3"/>
+        <path class="fd-fold" d="M62 34 L268 34 M62 58 L268 58"/>
+        <!-- fırça yazısı -->
+        <text class="fd-ink" x="88"  y="58">封</text>
+        <text class="fd-ink" x="124" y="57">印</text>
+        <text class="fd-ink" x="160" y="59">術</text>
+        <text class="fd-ink" x="196" y="57">式</text>
+        <text class="fd-ink" x="232" y="58">咒</text>
+      </svg>
+      <b class="st-text">MÜHÜRLENDİ</b>
+      <i class="st-sub" id="sf-who"></i>
+    </div>
+  </div>
+  <div class="sf-skip">geçmek için tıkla</div>
+</div>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="seal-fx.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
